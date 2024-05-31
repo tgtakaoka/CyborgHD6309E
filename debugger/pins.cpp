@@ -82,8 +82,7 @@ static inline void toggle_led() {
 }
 
 struct Pins Pins;
-
-class Mc6850 Acia(Console);
+struct Mc6850 Acia;
 
 void Pins::Dbus::begin() {
     busMode(DB, INPUT_PULLUP);
@@ -511,36 +510,17 @@ void Pins::begin() {
     SPI.swap(SPI_MAPPING);
 #endif
 
-    setIoDevice(SerialDevice::DEV_ACIA, ioBaseAddress());
+    Acia.enable(true, IO_BASE_ADDR);
 
     reset();
 }
 
-uint8_t Pins::allocateIrq() {
-    static uint8_t irq = 0;
-    return irq++;
+void Pins::assertIrq() const {
+    assert_irq();
 }
 
-void Pins::assertIrq(const uint8_t irq) {
-    _irq |= (1 << irq);
-    if (_irq)
-        assert_irq();
-}
-
-void Pins::negateIrq(const uint8_t irq) {
-    _irq &= ~(1 << irq);
-    if (_irq == 0)
-        negate_irq();
-}
-
-Pins::SerialDevice Pins::getIoDevice(uint16_t &baseAddr) {
-    baseAddr = Acia.baseAddr();
-    return _ioDevice;
-}
-
-void Pins::setIoDevice(SerialDevice device, uint16_t baseAddr) {
-    _ioDevice = device;
-    Acia.enable(true, baseAddr);
+void Pins::negateIrq() const {
+    negate_irq();
 }
 
 uint16_t Pins::ioRequestAddress() const {

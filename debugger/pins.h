@@ -27,17 +27,10 @@ struct Pins {
 
     static constexpr uint16_t ioBaseAddress() { return IO_BASE_ADDR; }
 
-    uint8_t allocateIrq();
-    void assertIrq(const uint8_t irq);
-    void negateIrq(const uint8_t irq);
+    void assertIrq() const;
+    void negateIrq() const;
 
     int sdCardChipSelectPin() const;
-
-    enum SerialDevice : uint8_t {
-        DEV_ACIA = 0,  // MC6850 ACIA
-    };
-    SerialDevice getIoDevice(uint16_t &baseAddr);
-    void setIoDevice(SerialDevice device, uint16_t addr);
 
 private:
     class Dbus {
@@ -64,8 +57,6 @@ private:
             const uint8_t *inst, uint8_t len, uint8_t *capWrite, uint8_t max, uint8_t *capRead);
 
     Dbus _dbus;
-    uint8_t _irq;
-    SerialDevice _ioDevice;
 };
 
 extern struct Pins Pins;
