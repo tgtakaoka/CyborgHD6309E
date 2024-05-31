@@ -43,22 +43,13 @@ static inline bool write_bus_cycle() {
 }
 
 static inline bool is_running() {
-#ifdef SIGNALS_BUS
     const uint8_t pins = busRead(SIGNALS);
     return (pins & (_BV(BA_PIN) | _BV(BS_PIN) | _BV(LIC_PIN))) == 0;
-#else
-    return digitalRead(BA) == LOW && digitalRead(BS) == LOW && digitalRead(LIC) == LOW;
-#endif
 }
 
 static inline bool valid_bus_cycle(const Signals *prev) {
-#ifdef SIGNALS_BUS
     const uint8_t pins = busRead(SIGNALS);
     return (pins & (_BV(BA_PIN) | _BV(BS_PIN))) == 0 && prev && prev->advancedValidMemoryAddress();
-#else
-    return digitalRead(BA) == LOW && digitalRead(BS) == LOW && prev &&
-           prev->advancedValidMemoryAddress();
-#endif
 }
 
 static inline void enable_ram() {
@@ -323,7 +314,6 @@ void Pins::reset(bool show) {
     for (;;) {
         fallingQ();
         Signals &signals = cycle(prev);
-        signals.debug('R');
         if (signals.halting())
             break;
         prev = &signals;
@@ -398,7 +388,6 @@ void Pins::halt(bool show) {
     for (;;) {
         fallingQ();
         Signals &signals = cycle(prev);
-        signals.debug('H');
         if (signals.halting())
             break;
         prev = &signals;
@@ -425,7 +414,6 @@ const Signals *Pins::unhalt() {
         if (is_running())
             break;
         Signals &signals = cycle(prev);
-        signals.debug('U');
         fallingQ();
         prev = &signals;
     }
@@ -451,12 +439,8 @@ uint8_t Pins::execute(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t
     for (uint8_t i = 0; i < len;) {
         setData(inst[i]);
         Signals &signals = cycle(prev);
-        if (signals.readCycle(prev)) {
-            signals.debug('i');
+        if (signals.readCycle(prev))
             i++;
-        } else {
-            signals.debug('-');
-        }
         if (signals.halting())
             goto end;
         fallingQ();
@@ -467,16 +451,10 @@ uint8_t Pins::execute(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t
         _dbus.capture(true);
     for (;;) {
         Signals &signals = cycle(prev);
-        if (cap >= max) {
-            signals.debug('/');
-        } else if (capWrite && signals.writeCycle(prev)) {
+        if (capWrite && signals.writeCycle(prev)) {
             capBuf[cap++] = signals.dbus();
-            signals.debug('w');
         } else if (capRead && signals.readCycle(prev)) {
             capBuf[cap++] = signals.dbus();
-            signals.debug('r');
-        } else {
-            signals.debug('-');
         }
         if (signals.halting())
             break;
@@ -496,7 +474,6 @@ void Pins::step(bool show) {
     const Signals *prev = unhalt();
     for (;;) {
         Signals &signals = cycle(prev);
-        signals.debug('S');
         if (signals.halting())
             break;
         fallingQ();

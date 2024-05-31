@@ -1,9 +1,7 @@
-
 #ifndef __SIGNALS_H__
 #define __SIGNALS_H__
 
 #include <stdint.h>
-
 #include "config.h"
 
 #ifndef _BV
@@ -14,9 +12,9 @@ struct Signals {
     void get();
     void print(const Signals *prev = nullptr) const;
     uint8_t dbus() const { return _dbus; }
-    bool running() const { return (_pins & babs) == 0; }
-    bool fetchingVector() const { return (_pins & babs) == bs; }
-    bool halting() const { return (_pins & babs) == babs; }
+    bool running() const { return babs() == 0; }
+    bool fetchingVector() const { return babs() == bs; }
+    bool halting() const { return babs() == (ba | bs); }
     bool lastInstructionCycle() const { return _pins & lic; }
     bool advancedValidMemoryAddress() const { return _pins & avma; }
     bool readCycle(const Signals *prev) const {
@@ -25,7 +23,6 @@ struct Signals {
     bool writeCycle(const Signals *prev) const {
         return prev && prev->advancedValidMemoryAddress() && (_pins & rw) == 0;
     }
-    void debug(char c) { _debug = c; }
 
     static void printCycles();
     static Signals &currCycle();
@@ -33,25 +30,21 @@ struct Signals {
     static void nextCycle();
 
 private:
-    enum : uint8_t {
-        bs = _BV(BS_PIN),
-        ba = _BV(BA_PIN),
-        babs = _BV(BA_PIN) | _BV(BS_PIN),
-        reset = _BV(RESET_PIN),
-        halt = _BV(HALT_PIN),
-        lic = _BV(LIC_PIN),
-        avma = _BV(AVMA_PIN),
-        rw = _BV(RD_WR_PIN),
-        busy = _BV(BUSY_PIN),
-    };
+
+    static constexpr uint8_t bs = _BV(BS_PIN);
+    static constexpr uint8_t ba = _BV(BA_PIN);
+    static constexpr uint8_t reset = _BV(RESET_PIN);
+    static constexpr uint8_t halt = _BV(HALT_PIN);
+    static constexpr uint8_t lic = _BV(LIC_PIN);
+    static constexpr uint8_t avma = _BV(AVMA_PIN);
+    static constexpr uint8_t rw = _BV(RD_WR_PIN);
+    static constexpr uint8_t busy = _BV(BUSY_PIN);
+    uint8_t babs() const { return _pins & (ba | bs); }
+
     uint8_t _pins;
     uint8_t _dbus;
-    char _debug;
 
-    bool resetAsserted() const { return (_pins & reset) == 0; }
-    bool haltAsserted() const { return (_pins & halt) == 0; }
-
-    static constexpr auto MAX_CYCLES = 60;
+    static constexpr auto MAX_CYCLES = 64;
     static uint8_t _put;
     static uint8_t _get;
     static uint8_t _cycles;

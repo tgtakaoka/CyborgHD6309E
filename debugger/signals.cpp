@@ -40,25 +40,20 @@ void Signals::nextCycle() {
 void Signals::get() {
     _pins = busRead(SIGNALS);
     _dbus = busRead(DB);
-    _debug = 0;
 }
 
 void Signals::print(const Signals *prev) const {
-    // clang-format off
     static char buffer[] = {
-        'D', ' ',               // _debug=0
-        'V',                    // ba/bs=2
-        'A',                    // avma=3
-        'B',                    // busy=4
-        'L',                    // lic=5
-        'W', ' ',               // rw=6
-        'D', '=', 0, 0,         // _dbus=10
-        ' ',                    // status?=12
-        'S', 0                  // status=13
+            'V',                  // ba/bs=0
+            'A',                  // avma=1
+            'B',                  // busy=2
+            'L',                  // lic=3
+            'W',                  // rw=4
+            ' ', 'D', '=', 0, 0,  // _dbus=8
+            ' ',                  // status?=10
+            'S', 0                // status=11
     };
-    // clang-format on
-    buffer[0] = _debug ? _debug : ' ';
-    char *p = buffer + 2;
+    auto p = buffer;
     if ((_pins & ba) == 0) {
         *p++ = (_pins & bs) == 0 ? ' ' : 'V';
     } else {
@@ -68,7 +63,7 @@ void Signals::print(const Signals *prev) const {
     *p++ = (_pins & busy) == 0 ? ' ' : 'B';
     *p++ = (_pins & lic) == 0 ? ' ' : 'L';
     *p++ = (_pins & rw) == 0 ? 'W' : 'R';
-    outHex8(buffer + 10, _dbus);
+    outHex8(buffer + 8, _dbus);
     if (prev) {
         char status;
         if (fetchingVector()) {
@@ -86,10 +81,10 @@ void Signals::print(const Signals *prev) const {
         } else {
             status = 'S';
         }
-        buffer[12] = ' ';
-        buffer[13] = status;
+        buffer[10] = ' ';
+        buffer[11] = status;
     } else {
-        buffer[12] = 0;
+        buffer[10] = 0;
     }
     cli.println(buffer);
 }
