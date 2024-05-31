@@ -63,38 +63,46 @@ static uint8_t mem_buffer[16];
 
 static char str_buffer[40];
 
+static uint8_t dump16bytes(uint16_t addr, uint8_t soff, uint8_t eoff) {
+    cli.printHex(addr, 4);
+    cli.print(':');
+    for (uint8_t i = 0; i < 16; i++) {
+        if (i < soff || i >= eoff) {
+            cli.print(F("   "));
+        } else {
+            const auto data = Regs.read(addr + i);
+            mem_buffer[i] = data;
+            cli.print(' ');
+            cli.printHex(data, 2);
+        }
+    }
+    cli.print(' ');
+    uint8_t len = 0;
+    for (uint8_t i = 0; i < 16; i++) {
+        if (i < soff || i >= eoff) {
+            cli.print(' ');
+        } else {
+            ++len;
+            const char data = mem_buffer[i];
+            if (isprint(data)) {
+                cli.print(data);
+            } else {
+                cli.print('.');
+            }
+        }
+    }
+    cli.println();
+    return len;
+}
+
 static void memoryDump(uint16_t addr, uint16_t len) {
     Regs.save();
-    const auto start = addr;
-    const auto end = addr + len;
-    for (addr &= ~0xF; addr < end; addr += 16) {
-        cli.printHex(addr, 4);
-        cli.print(':');
-        for (auto i = 0; i < 16; i++) {
-            const auto a = addr + i;
-            if (a < start || a >= end) {
-                cli.print(F("   "));
-            } else {
-                const auto data = Regs.read(a);
-                cli.print(' ');
-                cli.printHex(data, 2);
-            }
-        }
-        cli.print(' ');
-        for (auto i = 0; i < 16; i++) {
-            const auto a = addr + i;
-            if (a < start || a >= end) {
-                cli.print(' ');
-            } else {
-                const char data = Regs.read(a);
-                if (isprint(data)) {
-                    cli.print(data);
-                } else {
-                    cli.print('.');
-                }
-            }
-        }
-        cli.println();
+    while (len != 0) {
+        uint8_t soff = addr & 0xF;
+        uint8_t eoff = len + soff < 16 ? len + soff : 16;
+        addr &= ~0xF;
+        len -= dump16bytes(addr, soff, eoff);
+        addr += 16;
     }
     Regs.restore();
 }
