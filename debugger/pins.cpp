@@ -138,10 +138,6 @@ void Pins::Dbus::capture(bool enabled) {
     _capture = enabled;
 }
 
-void Pins::printSignals() {
-    Signals::printSignals();
-}
-
 /*
  * Start clock oscillator from Q=L and E=L
  */

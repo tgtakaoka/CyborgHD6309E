@@ -2,9 +2,6 @@
   The Controller can accept commands represented by one letter.
 
   R - reset MPU.
-  p - print MPU hardware signal status.
-  i - inject instruction.
-  I - inject instruction with printing signal status.
   d - dump memory. addr [length]
   m - write memory. addr byte...
   s - step one instruction.
@@ -37,11 +34,11 @@ libcli::Cli cli;
 #if ENABLE_ASM == 1
 #define USAGE                                                              \
     F("R:eset r:egs =:setReg d:ump D:is m:emory A:sm s/S:tep c/C:ont G:o " \
-      "h/H:alt F:iles L:oad I:nst p:ins")
+      "h/H:alt F:iles L:oad")
 #else
 #define USAGE                                                         \
     F("R:eset r:egs =:setReg d:ump D:is m:emory s/S:tep c/C:ont G:o " \
-      "h/H:alt F:iles L:oad I:nst p:ins")
+      "h/H:alt F:iles L:oad")
 #endif
 
 struct Commands Commands;
@@ -69,32 +66,6 @@ static uint8_t mem_buffer[16];
 #define MEMORY_DATA(i) ((uintptr_t)(i))
 
 static char str_buffer[40];
-
-static void handleInstruction(uint32_t value, uintptr_t extra, State state) {
-    uint16_t index = extra & 0xFF;
-    if (state == State::CLI_CANCEL)
-        goto cancel;
-    if (state == State::CLI_DELETE) {
-        if (index > 0) {
-            index--;
-            cli.backspace();
-            cli.readHex(handleInstruction, INST_DATA(index), UINT8_MAX, mem_buffer[index]);
-        }
-        return;
-    }
-
-    mem_buffer[index++] = value;
-    if (state == State::CLI_SPACE) {
-        if (index < sizeof(mem_buffer)) {
-            cli.readHex(handleInstruction, INST_DATA(index), UINT8_MAX);
-            return;
-        }
-    }
-    cli.println();
-    Pins.execInst(mem_buffer, index, true);
-cancel:
-    printPrompt();
-}
 
 static void memoryDump(uint16_t addr, uint16_t len) {
     Regs.save();
@@ -383,14 +354,6 @@ static void handleRegisterValue(uint32_t value, uintptr_t reg, State state) {
 
 void Commands::exec(char c) {
     switch (c) {
-    case 'p':
-        cli.println(F("Pins:"));
-        Pins.printSignals();
-        break;
-    case 'I':
-        cli.print(F("Instruction? "));
-        cli.readHex(handleInstruction, 0, UINT8_MAX);
-        return;
     case 'R':
         cli.println(F("Reset"));
         _target = HALT;

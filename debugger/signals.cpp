@@ -38,28 +38,7 @@ void Signals::nextCycle() {
 }
 
 void Signals::get() {
-#if defined(SIGNALS_BUS)
     _pins = busRead(SIGNALS);
-#else
-    uint8_t p = 0;
-    if (digitalRead(BA) == HIGH)
-        p |= ba;
-    if (digitalRead(BS) == HIGH)
-        p |= bs;
-    if (digitalRead(RESET) == HIGH)
-        p |= reset;
-    if (digitalRead(HALT) == HIGH)
-        p |= halt;
-    if (digitalRead(LIC) == HIGH)
-        p |= lic;
-    if (digitalRead(AVMA) == HIGH)
-        p |= avma;
-    if (digitalRead(RD_WR) == HIGH)
-        p |= rw;
-    if (digitalRead(BUSY) == HIGH)
-        p |= busy;
-    _pins = p;
-#endif
     _dbus = busRead(DB);
     _debug = 0;
 }
@@ -113,23 +92,6 @@ void Signals::print(const Signals *prev) const {
         buffer[12] = 0;
     }
     cli.println(buffer);
-}
-
-void Signals::printSignals() {
-    Signals s;
-    s.get();
-    // clang-format off
-    static char buffer[] = {
-        'R',                    // RESET=0
-        'H',                    // HALT=1
-        ' ',
-        0,
-    };
-    // clang-format on
-    buffer[0] = s.resetAsserted() ? 'R' : ' ';
-    buffer[1] = s.haltAsserted() ? 'H' : ' ';
-    cli.print(buffer);
-    s.print();
 }
 
 // Local Variables:
