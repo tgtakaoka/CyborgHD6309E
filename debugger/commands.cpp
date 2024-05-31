@@ -14,6 +14,7 @@
   H - halt MPU with printing bus cycles.
   D - disassemble
   A - assemble
+  U - upload S19 file
   F - list files in SD card
   L - load S-record file.
   ? - print version.
@@ -34,11 +35,11 @@ libcli::Cli cli;
 #if ENABLE_ASM == 1
 #define USAGE                                                              \
     F("R:eset r:egs =:setReg d:ump D:is m:emory A:sm s/S:tep c/C:ont G:o " \
-      "h/H:alt F:iles L:oad")
+      "U:pload F:iles L:oad")
 #else
 #define USAGE                                                         \
     F("R:eset r:egs =:setReg d:ump D:is m:emory s/S:tep c/C:ont G:o " \
-      "h/H:alt F:iles L:oad")
+      "U:pload F:iles L:oad")
 #endif
 
 struct Commands Commands;
@@ -313,6 +314,32 @@ static void handleLoadFile(char *line, uintptr_t extra, State state) {
     printPrompt();
 }
 
+struct UploadContext {
+    uint32_t size;
+    char buffer[80];
+    uintptr_t extra() { return reinterpret_cast<uintptr_t>(this); }
+    static UploadContext *context(uintptr_t extra) {
+        return reinterpret_cast<UploadContext *>(extra);
+    }
+} upload_context;
+
+void handleUploadFile(char *line, uintptr_t extra, State state) {
+    UploadContext *context = UploadContext::context(extra);
+    if (state == State::CLI_CANCEL) {
+        cli.print(context->size);
+        cli.println(F(" bytes uploaded"));
+        printPrompt();
+        return;
+    }
+    const auto c = context->buffer[0];
+    if (c == 'S') {
+        context->size += loadS19Record(context->buffer);
+        cli.println();
+    }
+    cli.readLine(handleUploadFile, context->extra(), context->buffer,
+            sizeof(context->buffer));
+}
+
 static void handleRegisterValue(uint32_t, uintptr_t, State);
 
 static void handleSetRegister(char *word, uintptr_t extra, State state) {
@@ -416,6 +443,12 @@ void Commands::exec(char c) {
             _showRegs = false;
             Pins.run();
         }
+        return;
+    case 'U':
+        cli.println(F("Upload waiting..."));
+        upload_context.size = 0;
+        cli.readLine(handleUploadFile, upload_context.extra(),
+                upload_context.buffer, sizeof(upload_context.buffer));
         return;
     case 'F':
         cli.println(F("Files"));
