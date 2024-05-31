@@ -15,11 +15,9 @@ struct Pins {
     void step(bool show = false);
     void run();
     void stopRunning();
-    void execInst(const uint8_t *inst, uint8_t len, bool show = false);
-    uint8_t captureReads(
-            const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max);
-    uint8_t captureWrites(
-            const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max);
+    void execInst(const uint8_t *inst, uint8_t len);
+    void captureReads(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max);
+    void captureWrites(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max);
 
     void acknowledgeIoRequest();
     uint16_t ioRequestAddress() const;
@@ -62,8 +60,8 @@ private:
     Signals &cycle(const Signals *prev);
     const Signals *unhalt();
     void setData(uint8_t data);
-    uint8_t execute(const uint8_t *inst, uint8_t len, uint8_t *capBuf,
-            uint8_t max, bool capWrite, bool capRead, bool show);
+    void execute(
+            const uint8_t *inst, uint8_t len, uint8_t *capWrite, uint8_t max, uint8_t *capRead);
 
     Dbus _dbus;
     uint8_t _irq;

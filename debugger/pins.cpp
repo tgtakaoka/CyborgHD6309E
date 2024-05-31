@@ -409,25 +409,25 @@ const Signals *Pins::unhalt() {
     return prev;
 }
 
-void Pins::execInst(const uint8_t *inst, uint8_t len, bool show) {
-    execute(inst, len, nullptr, 0, false, false, show);
+void Pins::execInst(const uint8_t *inst, uint8_t len) {
+    execute(inst, len, nullptr, 0, nullptr);
 }
 
-uint8_t Pins::captureReads(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max) {
-    return execute(inst, len, capBuf, max, false, capBuf != nullptr, false);
+void Pins::captureReads(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max) {
+    execute(inst, len, nullptr, max, capBuf);
 }
 
-uint8_t Pins::captureWrites(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max) {
-    return execute(inst, len, capBuf, max, capBuf != nullptr, false, false);
+void Pins::captureWrites(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max) {
+    execute(inst, len, capBuf, max, nullptr);
 }
 
-uint8_t Pins::execute(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max, bool capWrite,
-        bool capRead, bool show) {
+void Pins::execute(
+        const uint8_t *inst, uint8_t len, uint8_t *capWrite, uint8_t max, uint8_t *capRead) {
     uint8_t cap = 0;
-    const Signals *prev = unhalt();
+    const auto *prev = unhalt();
     for (uint8_t i = 0; i < len;) {
         setData(inst[i]);
-        Signals &signals = cycle(prev);
+        auto &signals = cycle(prev);
         if (signals.readCycle(prev))
             i++;
         if (signals.halting())
@@ -439,11 +439,11 @@ uint8_t Pins::execute(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t
     if (capWrite)
         _dbus.capture(true);
     for (;;) {
-        Signals &signals = cycle(prev);
+        auto &signals = cycle(prev);
         if (capWrite && signals.writeCycle(prev)) {
-            capBuf[cap++] = signals.dbus();
+            capWrite[cap++] = signals.dbus();
         } else if (capRead && signals.readCycle(prev)) {
-            capBuf[cap++] = signals.dbus();
+            capRead[cap++] = signals.dbus();
         }
         if (signals.halting())
             break;
@@ -454,9 +454,6 @@ uint8_t Pins::execute(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t
         _dbus.capture(false);
 end:
     restartEQ();
-    if (show)
-        Signals::printCycles();
-    return cap;
 }
 
 void Pins::step(bool show) {
