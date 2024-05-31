@@ -11,35 +11,35 @@
 #endif
 
 static inline void assert_reset() {
-    digitalWrite(RESET, LOW);
+    digitalWriteFast(RESET, LOW);
 }
 
 static inline void negate_reset() {
-    digitalWrite(RESET, HIGH);
+    digitalWriteFast(RESET, HIGH);
 }
 
 static inline void assert_halt() {
-    digitalWrite(HALT, LOW);
+    digitalWriteFast(HALT, LOW);
 }
 
 static inline void negate_halt() {
-    digitalWrite(HALT, HIGH);
+    digitalWriteFast(HALT, HIGH);
 }
 
 static inline void assert_irq() {
-    digitalWrite(IRQ, LOW);
+    digitalWriteFast(IRQ, LOW);
 }
 
 static inline void negate_irq() {
-    digitalWrite(IRQ, HIGH);
+    digitalWriteFast(IRQ, HIGH);
 }
 
 static inline void negate_nmi() {
-    digitalWrite(NMI, HIGH);
+    digitalWriteFast(NMI, HIGH);
 }
 
 static inline bool write_bus_cycle() {
-    return digitalRead(RD_WR) == LOW;
+    return digitalReadFast(RD_WR) == LOW;
 }
 
 static inline bool is_running() {
@@ -53,31 +53,31 @@ static inline bool valid_bus_cycle(const Signals *prev) {
 }
 
 static inline void enable_ram() {
-    digitalWrite(RAM_E, LOW);
+    digitalWriteFast(RAM_E, LOW);
 }
 
 static inline void disable_ram() {
-    digitalWrite(RAM_E, HIGH);
+    digitalWriteFast(RAM_E, HIGH);
 }
 
 static inline bool user_switch_asserted() {
-    return digitalRead(USR_SW) == LOW;
+    return digitalReadFast(USR_SW) == LOW;
 }
 
 static inline void turnon_led() {
-    digitalWrite(USR_LED, HIGH);
+    digitalWriteFast(USR_LED, HIGH);
 }
 
 static inline void turnoff_led() {
-    digitalWrite(USR_LED, LOW);
+    digitalWriteFast(USR_LED, LOW);
 }
 
 static inline void toggle_led() __attribute__((unused));
 static inline void toggle_led() {
-    if (digitalRead(USR_LED)) {
-        digitalWrite(USR_LED, LOW);
+    if (digitalReadFast(USR_LED)) {
+        digitalWriteFast(USR_LED, LOW);
     } else {
-        digitalWrite(USR_LED, HIGH);
+        digitalWriteFast(USR_LED, HIGH);
     }
 }
 
@@ -155,11 +155,11 @@ static inline void startOscillator() {
 static inline void stopOscillator() {
     TCA0.SPLIT.CTRLA = 0;
 
-    digitalWrite(Q_CLK, HIGH);
+    digitalWriteFast(Q_CLK, HIGH);
     EVSYS.USEREVOUTC = EVSYS_CHANNEL_OFF_gc;  // disable EVOUTC(Q_CLK)
     CCL.LUT1CTRLA = 0;                        // disable Q_CLK
 
-    digitalWrite(E_CLK, HIGH);
+    digitalWriteFast(E_CLK, HIGH);
     EVSYS.USEREVOUTF = EVSYS_CHANNEL_OFF_gc;  // disable EVOUTF(E_CLK)
     CCL.LUT0CTRLA = 0;                        // disable E_CLK
 }
@@ -235,22 +235,22 @@ static void setupTimer() {
 }
 
 static inline void raisingQ() {
-    digitalWrite(Q_CLK, HIGH);
+    digitalWriteFast(Q_CLK, HIGH);
     asm volatile("nop");
 }
 
 static inline void raisingE() {
-    digitalWrite(E_CLK, HIGH);
+    digitalWriteFast(E_CLK, HIGH);
     asm volatile("nop");
 }
 
 static inline void fallingQ() {
-    digitalWrite(Q_CLK, LOW);
+    digitalWriteFast(Q_CLK, LOW);
     asm volatile("nop");
 }
 
 static inline void fallingE() {
-    digitalWrite(E_CLK, LOW);
+    digitalWriteFast(E_CLK, LOW);
     asm volatile("nop");
 }
 
@@ -564,9 +564,9 @@ void Pins::setIoDevice(SerialDevice device, uint16_t baseAddr) {
 
 uint16_t Pins::ioRequestAddress() const {
     uint16_t addr = ioBaseAddress();
-    if (digitalRead(ADR0) == HIGH)
+    if (digitalReadFast(ADR0) == HIGH)
         addr |= (1 << 0);
-    if (digitalRead(ADR1) == HIGH)
+    if (digitalReadFast(ADR1) == HIGH)
         addr |= (1 << 1);
     return addr;
 }

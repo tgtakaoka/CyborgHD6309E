@@ -35,8 +35,8 @@
             PORT(name).DIRSET = PIN_bm(name);   \
     } while (0)
 #define pinModeInvert(name) (PINCTRL(name) |= PORT_INVEN_bm)
-#define digitalRead(name) ((PIN(name) & PIN_bm(name)) ? HIGH : LOW)
-#define digitalWrite(name, val)               \
+#define digitalReadFast(name) ((PIN(name) & PIN_bm(name)) ? HIGH : LOW)
+#define digitalWriteFast(name, val)               \
     do {                                      \
         if ((val) == LOW) {                   \
             PORT(name).OUTCLR = PIN_bm(name); \
@@ -45,8 +45,7 @@
         }                                     \
     } while (0)
 #define digitalToggle(name) (PORT(name).OUTTGL = PIN_bm(name))
-static void enablePullup(register8_t *pinctrl, uint8_t mask)
-        __attribute__((unused));
+static void enablePullup(register8_t *pinctrl, uint8_t mask) __attribute__((unused));
 static void enablePullup(register8_t *pinctrl, uint8_t mask) {
     while (mask) {
         if (mask & 1)
@@ -123,15 +122,14 @@ static void enablePullup(register8_t *pinctrl, uint8_t mask) {
             PDIR(name) |= __BUS__(name);  \
     } while (0)
 #define busRead(name) (PIN(name) & BUS_gm(name))
-#define busWrite(name, val)                                              \
-    do {                                                                 \
-        if (BUS_gm(name) == 0xFF) {                                      \
-            POUT(name) = (val);                                          \
-        } else {                                                         \
-            const uint8_t out =                                          \
-                    (POUT(name) & ~BUS_gm(name)) | (val & BUS_gm(name)); \
-            POUT(name) = out;                                            \
-        }                                                                \
+#define busWrite(name, val)                                                          \
+    do {                                                                             \
+        if (BUS_gm(name) == 0xFF) {                                                  \
+            POUT(name) = (val);                                                      \
+        } else {                                                                     \
+            const uint8_t out = (POUT(name) & ~BUS_gm(name)) | (val & BUS_gm(name)); \
+            POUT(name) = out;                                                        \
+        }                                                                            \
     } while (0)
 
 #endif
