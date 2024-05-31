@@ -37,7 +37,7 @@ private:
     static constexpr uint8_t halt = _BV(HALT_PIN);
     static constexpr uint8_t lic = _BV(LIC_PIN);
     static constexpr uint8_t avma = _BV(AVMA_PIN);
-    static constexpr uint8_t rw = _BV(RD_WR_PIN);
+    static constexpr uint8_t rw = _BV(RW_PIN);
     static constexpr uint8_t busy = _BV(BUSY_PIN);
     uint8_t babs() const { return _pins & (ba | bs); }
 

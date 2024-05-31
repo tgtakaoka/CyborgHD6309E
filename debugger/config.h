@@ -110,8 +110,8 @@
 #define LIC_PIN 1
 
 // PD2: HD6309E R/W, input
-#define RD_WR_PORT SIGNALS_PORT
-#define RD_WR_PIN 2
+#define RW_PORT SIGNALS_PORT
+#define RW_PIN 2
 
 // PD3: HD6309E AVMA, input
 #define AVMA_PORT SIGNALS_PORT

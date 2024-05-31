@@ -39,7 +39,7 @@ static inline void negate_nmi() {
 }
 
 static inline bool write_bus_cycle() {
-    return digitalReadFast(RD_WR) == LOW;
+    return digitalReadFast(RW) == LOW;
 }
 
 static inline bool is_running() {
@@ -493,7 +493,7 @@ void Pins::begin() {
     pinMode(LIC, INPUT_PULLUP);
     pinMode(AVMA, INPUT_PULLUP);
     pinMode(BUSY, INPUT_PULLUP);
-    pinMode(RD_WR, INPUT_PULLUP);
+    pinMode(RW, INPUT_PULLUP);
     pinMode(RAM_E, OUTPUT);
     disable_ram();
 
