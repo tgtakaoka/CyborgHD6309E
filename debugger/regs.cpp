@@ -7,7 +7,9 @@
 #include "pins.h"
 #include "string_util.h"
 
+#if ENABLE_ASM == 1
 libasm::mc6809::AsmMc6809 assembler;
+#endif
 libasm::mc6809::DisMc6809 disassembler;
 
 struct Regs Regs;
@@ -360,6 +362,7 @@ uint16_t Regs::disassemble(uint16_t addr, uint16_t numInsn) const {
     return addr;
 }
 
+#if ENABLE_ASM == 1
 uint16_t Regs::assemble(uint16_t addr, const char *line) const {
     assembler.setCpu(cpu());
     libasm::Insn insn(addr);
@@ -374,6 +377,7 @@ uint16_t Regs::assemble(uint16_t addr, const char *line) const {
     }
     return addr;
 }
+#endif
 
 uint8_t Memory::read(uint16_t addr) const {
     static uint8_t LDA[] = {0xB6, 0, 0};  // LDA $addr

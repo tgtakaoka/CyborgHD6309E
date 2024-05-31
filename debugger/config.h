@@ -11,7 +11,8 @@
 #if defined(__AVR_ATmega4809__) && defined(MEGACOREX_DEFAULT_40PIN_PINOUT)
 /**
  * Arduino IDE settings
- * FQBN: MegaCoreX:megaavr:4809:clock=internal_16MHz,pinout=40pin_standard,resetpin=reset,bootloader=uart1_default
+ * FQBN:
+ * MegaCoreX:megaavr:4809:clock=internal_16MHz,pinout=40pin_standard,resetpin=reset,bootloader=uart1_default
  * Core: https://github.com/MCUdude/MegaCoreX
  * Board: ATmega4809
  * Clock: Internal 16MHz
@@ -23,6 +24,7 @@
 
 #define Console Serial1
 #define CONSOLE_BAUD 115200
+//#define ENABLE_ASM 1
 
 /*
  * E_OSC: TCA0-WO3-PORTB(PB3)
@@ -180,6 +182,6 @@
 
 #error "Unknown Arduino board config"
 
-#endif // MEGACOREX_DEFAULT_40PIN_PINOUT
+#endif  // MEGACOREX_DEFAULT_40PIN_PINOUT
 
 #endif

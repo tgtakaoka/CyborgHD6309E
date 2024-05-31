@@ -34,9 +34,15 @@ using namespace libasm;
 using State = libcli::Cli::State;
 libcli::Cli cli;
 
+#if ENABLE_ASM == 1
 #define USAGE                                                              \
     F("R:eset r:egs =:setReg d:ump D:is m:emory A:sm s/S:tep c/C:ont G:o " \
       "h/H:alt F:iles L:oad I:nst p:ins")
+#else
+#define USAGE                                                         \
+    F("R:eset r:egs =:setReg d:ump D:is m:emory s/S:tep c/C:ont G:o " \
+      "h/H:alt F:iles L:oad I:nst p:ins")
+#endif
 
 struct Commands Commands;
 
@@ -211,6 +217,7 @@ static void handleMemory(uint32_t value, uintptr_t extra, State state) {
     printPrompt();
 }
 
+#if ENABLE_ASM == 1
 static void handleAssembleLine(char *line, uintptr_t extra, State state) {
     (void)extra;
     if (state == State::CLI_CANCEL || *line == 0) {
@@ -238,6 +245,7 @@ static void handleAssembler(uint32_t value, uintptr_t extra, State state) {
     cli.print('?');
     cli.readLine(handleAssembleLine, 0, str_buffer, sizeof(str_buffer));
 }
+#endif
 
 static void listDirectory(File dir, const char *parent = nullptr) {
     while (true) {
@@ -396,10 +404,12 @@ void Commands::exec(char c) {
         cli.print(F("Disassemble? "));
         cli.readHex(handleDisassemble, DIS_ADDR, UINT16_MAX);
         return;
+#if ENABLE_ASM == 1
     case 'A':
         cli.print(F("Assemble? "));
         cli.readHex(handleAssembler, ASM_ADDR, UINT16_MAX);
         return;
+#endif
     case 'm':
         cli.print(F("Memory? "));
         cli.readHex(handleMemory, MEMORY_ADDR, UINT16_MAX);
