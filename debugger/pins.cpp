@@ -43,13 +43,13 @@ static inline bool write_bus_cycle() {
 }
 
 static inline bool is_running() {
-    const uint8_t pins = busRead(SIGNALS);
+    const auto pins = busRead(SIGNALS);
     return (pins & (_BV(BA_PIN) | _BV(BS_PIN) | _BV(LIC_PIN))) == 0;
 }
 
 static inline bool valid_bus_cycle(const Signals *prev) {
-    const uint8_t pins = busRead(SIGNALS);
-    return (pins & (_BV(BA_PIN) | _BV(BS_PIN))) == 0 && prev && prev->advancedValidMemoryAddress();
+    const auto pins = busRead(SIGNALS);
+    return (pins & (_BV(BA_PIN) | _BV(BS_PIN))) == 0 && prev && prev->avma();
 }
 
 static inline void enable_ram() {
@@ -313,7 +313,7 @@ void Pins::reset(bool show) {
     for (;;) {
         fallingQ();
         Signals &signals = cycle(prev);
-        if (signals.halting())
+        if (signals.halt())
             break;
         prev = &signals;
     }
@@ -376,7 +376,7 @@ void Pins::halt(bool show) {
     for (;;) {
         fallingQ();
         Signals &signals = cycle(prev);
-        if (signals.halting())
+        if (signals.halt())
             break;
         prev = &signals;
     }
@@ -427,9 +427,9 @@ void Pins::execute(
     for (uint8_t i = 0; i < len;) {
         setData(inst[i]);
         auto &signals = cycle(prev);
-        if (signals.readCycle(prev))
+        if (signals.validRead(prev))
             i++;
-        if (signals.halting())
+        if (signals.halt())
             goto end;
         fallingQ();
         prev = &signals;
@@ -439,12 +439,12 @@ void Pins::execute(
         _dbus.capture(true);
     for (;;) {
         auto &signals = cycle(prev);
-        if (capWrite && signals.writeCycle(prev)) {
-            capWrite[cap++] = signals.dbus();
-        } else if (capRead && signals.readCycle(prev)) {
-            capRead[cap++] = signals.dbus();
+        if (capWrite && signals.validWrite(prev)) {
+            capWrite[cap++] = signals.data;
+        } else if (capRead && signals.validRead(prev)) {
+            capRead[cap++] = signals.data;
         }
-        if (signals.halting())
+        if (signals.halt())
             break;
         fallingQ();
         prev = &signals;
@@ -459,7 +459,7 @@ void Pins::step(bool show) {
     const Signals *prev = unhalt();
     for (;;) {
         Signals &signals = cycle(prev);
-        if (signals.halting())
+        if (signals.halt())
             break;
         fallingQ();
         prev = &signals;

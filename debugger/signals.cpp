@@ -8,12 +8,15 @@ uint8_t Signals::_get = 0;
 uint8_t Signals::_cycles = 0;
 Signals Signals::_signals[MAX_CYCLES];
 
+void Signals::get() {
+    _pins = busRead(SIGNALS);
+    data = busRead(DB);
+}
+
 void Signals::printCycles() {
-    const Signals *prev = nullptr;
     for (auto i = 0; i < _cycles; i++) {
         const auto idx = (_get + i) % MAX_CYCLES;
-        _signals[idx].print(prev);
-        prev = &_signals[idx];
+        _signals[idx].print();
     }
 }
 
@@ -37,12 +40,7 @@ void Signals::nextCycle() {
     }
 }
 
-void Signals::get() {
-    _pins = busRead(SIGNALS);
-    _dbus = busRead(DB);
-}
-
-void Signals::print(const Signals *prev) const {
+void Signals::print() const {
     static char buffer[] = {
             'V',                  // ba/bs=0
             'A',                  // avma=1
@@ -50,42 +48,19 @@ void Signals::print(const Signals *prev) const {
             'L',                  // lic=3
             'W',                  // rw=4
             ' ', 'D', '=', 0, 0,  // _dbus=8
-            ' ',                  // status?=10
-            'S', 0                // status=11
+            0,                    // EOS
     };
     auto p = buffer;
-    if ((_pins & ba) == 0) {
-        *p++ = (_pins & bs) == 0 ? ' ' : 'V';
+    if (ba() == 0) {
+        *p++ = bs() == 0 ? ' ' : 'V';
     } else {
-        *p++ = (_pins & bs) == 0 ? 'S' : 'H';
+        *p++ = bs() == 0 ? 'S' : 'H';
     }
-    *p++ = (_pins & avma) == 0 ? ' ' : 'A';
-    *p++ = (_pins & busy) == 0 ? ' ' : 'B';
-    *p++ = (_pins & lic) == 0 ? ' ' : 'L';
-    *p++ = (_pins & rw) == 0 ? 'W' : 'R';
-    outHex8(buffer + 8, _dbus);
-    if (prev) {
-        char status;
-        if (fetchingVector()) {
-            status = 'V';
-        } else if (running()) {
-            if (writeCycle(prev)) {
-                status = 'W';
-            } else if (readCycle(prev)) {
-                status = 'R';
-            } else {
-                status = '-';
-            }
-        } else if (halting()) {
-            status = 'H';
-        } else {
-            status = 'S';
-        }
-        buffer[10] = ' ';
-        buffer[11] = status;
-    } else {
-        buffer[10] = 0;
-    }
+    *p++ = avma() == 0 ? ' ' : 'A';
+    *p++ = busy() == 0 ? ' ' : 'B';
+    *p++ = lic() == 0 ? ' ' : 'L';
+    *p++ = rw() == 0 ? 'W' : 'R';
+    outHex8(buffer + 8, data);
     cli.println(buffer);
 }
 

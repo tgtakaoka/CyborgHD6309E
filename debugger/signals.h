@@ -4,25 +4,28 @@
 #include <stdint.h>
 #include "config.h"
 
-#ifndef _BV
-#define _BV(n) (1 << (n))
-#endif
+namespace {}  // namespace
 
 struct Signals {
     void get();
-    void print(const Signals *prev = nullptr) const;
-    uint8_t dbus() const { return _dbus; }
-    bool running() const { return babs() == 0; }
-    bool fetchingVector() const { return babs() == bs; }
-    bool halting() const { return babs() == (ba | bs); }
-    bool lastInstructionCycle() const { return _pins & lic; }
-    bool advancedValidMemoryAddress() const { return _pins & avma; }
-    bool readCycle(const Signals *prev) const {
-        return prev && prev->advancedValidMemoryAddress() && (_pins & rw);
+    void print() const;
+    uint8_t rw() const { return _pins & _bv(RW_PIN); }
+    uint8_t ba() const { return _pins & _bv(BA_PIN); }
+    uint8_t bs() const { return _pins & _bv(BS_PIN); }
+    uint8_t lic() const { return _pins & _bv(LIC_PIN); }
+    uint8_t avma() const { return _pins & _bv(AVMA_PIN); }
+    uint8_t busy() const { return _pins & _bv(BUSY_PIN); }
+    bool run() const { return ba() == 0 && bs() == 0; }
+    bool vector() const { return ba() == 0 && bs(); }
+    bool halt() const { return ba() && bs(); }
+    bool validRead(const Signals *prev) const {
+        return prev && prev->avma() && rw();
     }
-    bool writeCycle(const Signals *prev) const {
-        return prev && prev->advancedValidMemoryAddress() && (_pins & rw) == 0;
+    bool validWrite(const Signals *prev) const {
+        return prev && prev->avma() && rw() == 0;
     }
+
+    uint8_t data;
 
     static void printCycles();
     static Signals &currCycle();
@@ -30,21 +33,11 @@ struct Signals {
     static void nextCycle();
 
 private:
-
-    static constexpr uint8_t bs = _BV(BS_PIN);
-    static constexpr uint8_t ba = _BV(BA_PIN);
-    static constexpr uint8_t reset = _BV(RESET_PIN);
-    static constexpr uint8_t halt = _BV(HALT_PIN);
-    static constexpr uint8_t lic = _BV(LIC_PIN);
-    static constexpr uint8_t avma = _BV(AVMA_PIN);
-    static constexpr uint8_t rw = _BV(RW_PIN);
-    static constexpr uint8_t busy = _BV(BUSY_PIN);
-    uint8_t babs() const { return _pins & (ba | bs); }
-
     uint8_t _pins;
-    uint8_t _dbus;
 
-    static constexpr auto MAX_CYCLES = 64;
+    static constexpr uint8_t _bv(uint8_t pin) { return 1 << pin; }
+
+    static constexpr auto MAX_CYCLES = 32;
     static uint8_t _put;
     static uint8_t _get;
     static uint8_t _cycles;
