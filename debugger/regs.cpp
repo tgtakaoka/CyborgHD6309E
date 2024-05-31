@@ -1,14 +1,11 @@
 #include "regs.h"
-
-#include <libcli.h>
-
 #include <asm_mc6809.h>
 #include <dis_mc6809.h>
+#include "commands.h"
+#include "config.h"
 #include "mc6850.h"
 #include "pins.h"
 #include "string_util.h"
-
-extern libcli::Cli &cli;
 
 libasm::mc6809::AsmMc6809 assembler;
 libasm::mc6809::DisMc6809 disassembler;

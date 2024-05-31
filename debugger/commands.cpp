@@ -23,26 +23,22 @@
 */
 
 #include "commands.h"
-
 #include <SD.h>
-#include <libcli.h>
-
+#include <string.h>
 #include "config.h"
 #include "pins.h"
 #include "regs.h"
 
-#include <string.h>
-
 using namespace libasm;
 
-typedef libcli::Cli::State State;
-extern libcli::Cli &cli;
+using State = libcli::Cli::State;
+libcli::Cli cli;
 
 #define USAGE                                                              \
     F("R:eset r:egs =:setReg d:ump D:is m:emory A:sm s/S:tep c/C:ont G:o " \
       "h/H:alt F:iles L:oad I:nst p:ins")
 
-class Commands Commands;
+struct Commands Commands;
 
 static void commandHandler(char c, uintptr_t extra) {
     (void)extra;
@@ -76,8 +72,7 @@ static void handleInstruction(uint32_t value, uintptr_t extra, State state) {
         if (index > 0) {
             index--;
             cli.backspace();
-            cli.readHex(handleInstruction, INST_DATA(index), UINT8_MAX,
-                    mem_buffer[index]);
+            cli.readHex(handleInstruction, INST_DATA(index), UINT8_MAX, mem_buffer[index]);
         }
         return;
     }
@@ -190,8 +185,7 @@ static void handleMemory(uint32_t value, uintptr_t extra, State state) {
             cli.readHex(handleMemory, MEMORY_ADDR, UINT16_MAX, last_addr);
         } else {
             index--;
-            cli.readHex(handleMemory, MEMORY_DATA(index), UINT8_MAX,
-                    mem_buffer[index]);
+            cli.readHex(handleMemory, MEMORY_DATA(index), UINT8_MAX, mem_buffer[index]);
         }
         return;
     }
@@ -368,8 +362,7 @@ static void handleSetRegister(char *word, uintptr_t extra, State state) {
 static void handleRegisterValue(uint32_t value, uintptr_t reg, State state) {
     if (state == State::CLI_DELETE) {
         cli.backspace(2);  // ' ', '?'
-        cli.readWord(
-                handleSetRegister, 0, str_buffer, sizeof(str_buffer), true);
+        cli.readWord(handleSetRegister, 0, str_buffer, sizeof(str_buffer), true);
         return;
     }
     if (state != State::CLI_CANCEL) {

@@ -1,11 +1,7 @@
 #include "signals.h"
-
-#include <libcli.h>
-
+#include "commands.h"
 #include "digital_fast.h"
 #include "string_util.h"
-
-extern libcli::Cli &cli;
 
 uint8_t Signals::_put = 0;
 uint8_t Signals::_get = 0;

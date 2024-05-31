@@ -1,8 +1,9 @@
 #ifndef __COMMANDS_H__
 #define __COMMANDS_H__
 
-class Commands {
-public:
+#include <libcli.h>
+
+struct Commands {
     void begin();
     void loop();
     void exec(char c);
@@ -19,6 +20,7 @@ private:
 };
 
 extern Commands Commands;
+extern libcli::Cli cli;
 
 #endif
 

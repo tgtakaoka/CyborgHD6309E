@@ -1,8 +1,5 @@
 #include "pins.h"
-
 #include <Arduino.h>
-#include <libcli.h>
-
 #include "commands.h"
 #include "digital_fast.h"
 #include "mc6850.h"
@@ -12,8 +9,6 @@
 #ifdef SPI_MAPPING
 #include <SPI.h>
 #endif
-
-extern libcli::Cli &cli;
 
 static inline void assert_reset() {
     digitalWrite(RESET, LOW);
@@ -52,16 +47,14 @@ static inline bool is_running() {
     const uint8_t pins = busRead(SIGNALS);
     return (pins & (_BV(BA_PIN) | _BV(BS_PIN) | _BV(LIC_PIN))) == 0;
 #else
-    return digitalRead(BA) == LOW && digitalRead(BS) == LOW &&
-           digitalRead(LIC) == LOW;
+    return digitalRead(BA) == LOW && digitalRead(BS) == LOW && digitalRead(LIC) == LOW;
 #endif
 }
 
 static inline bool valid_bus_cycle(const Signals *prev) {
 #ifdef SIGNALS_BUS
     const uint8_t pins = busRead(SIGNALS);
-    return (pins & (_BV(BA_PIN) | _BV(BS_PIN))) == 0 && prev &&
-           prev->advancedValidMemoryAddress();
+    return (pins & (_BV(BA_PIN) | _BV(BS_PIN))) == 0 && prev && prev->advancedValidMemoryAddress();
 #else
     return digitalRead(BA) == LOW && digitalRead(BS) == LOW && prev &&
            prev->advancedValidMemoryAddress();
@@ -158,7 +151,7 @@ static inline void startOscillator() {
     TCA0.SPLIT.HCNT = (CLK_PER_MPU / 4) * 3;   // initialize E_OSC at 1.5pi rad.
     TCA0.SPLIT.CTRLB = TCA_SPLIT_LCMP0EN_bm |  // enable LCMP0(Q_OSC)
                        TCA_SPLIT_HCMP0EN_bm;   // enable HCMP0(E_OSC)
-    TCA0.SPLIT.CTRLC = 0;  // set L to LCMP0OV(Q_OSC) HCMP0OV(E_OSC)
+    TCA0.SPLIT.CTRLC = 0;                      // set L to LCMP0OV(Q_OSC) HCMP0OV(E_OSC)
 
     CCL.LUT1CTRLA = CCL_ENABLE_bm;                 // enable Q_CLK
     EVSYS.USEREVOUTC = EVSYS_CHANNEL_CHANNEL5_gc;  // enable EVOUTC(Q_CLK)
@@ -447,18 +440,16 @@ void Pins::execInst(const uint8_t *inst, uint8_t len, bool show) {
     execute(inst, len, nullptr, 0, false, false, show);
 }
 
-uint8_t Pins::captureReads(
-        const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max) {
+uint8_t Pins::captureReads(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max) {
     return execute(inst, len, capBuf, max, false, capBuf != nullptr, false);
 }
 
-uint8_t Pins::captureWrites(
-        const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max) {
+uint8_t Pins::captureWrites(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max) {
     return execute(inst, len, capBuf, max, capBuf != nullptr, false, false);
 }
 
-uint8_t Pins::execute(const uint8_t *inst, uint8_t len, uint8_t *capBuf,
-        uint8_t max, bool capWrite, bool capRead, bool show) {
+uint8_t Pins::execute(const uint8_t *inst, uint8_t len, uint8_t *capBuf, uint8_t max, bool capWrite,
+        bool capRead, bool show) {
     uint8_t cap = 0;
     const Signals *prev = unhalt();
     for (uint8_t i = 0; i < len;) {

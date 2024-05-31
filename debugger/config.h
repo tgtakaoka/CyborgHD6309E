@@ -1,6 +1,6 @@
 /* -*- mode: c++; c-basic-offset: 4; tab-width: 4; -*- */
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
+#ifndef __DEBUGGER_CONFIG_H__
+#define __DEBUGGER_CONFIG_H__
 
 #include <Arduino.h>
 
