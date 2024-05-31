@@ -4,19 +4,20 @@
  * This sketch is designed to controll and debug MC6809E/HD6309E MPU.
  */
 
-#include "commands.h"
-#include "pins.h"
+#include "config.h"
+#include "debugger.h"
 
 void setup() {
     Console.begin(CONSOLE_BAUD);
+    while (!Console)
+        yield();
     cli.begin(Console);
-    Pins.begin();
-    Commands.begin();
+    Debugger.begin();
     interrupts();
 }
 
 void loop() {
-    Commands.loop();
+    Debugger.loop();
 }
 
 // Local Variables:

@@ -1,16 +1,18 @@
-#ifndef __COMMANDS_H__
-#define __COMMANDS_H__
+#ifndef __DEBUGGER_H__
+#define __DEBUGGER_H__
 
 #include <libcli.h>
 
-struct Commands {
+struct Debugger {
     void begin();
     void loop();
     void exec(char c);
     void halt(bool show = false);
+    void usage() const;
+    void printStatus();
 };
 
-extern Commands Commands;
+extern struct Debugger Debugger;
 extern libcli::Cli cli;
 
 #endif

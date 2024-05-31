@@ -17,11 +17,10 @@
   ? - print version.
 */
 
-#include "commands.h"
+#include "debugger.h"
 #include <SD.h>
 #include <string.h>
 #include "config.h"
-#include "mems.h"
 #include "pins.h"
 #include "regs.h"
 
@@ -38,11 +37,11 @@ libcli::Cli cli;
       "U:pload F:iles L:oad")
 #endif
 
-struct Commands Commands;
+struct Debugger Debugger;
 
 static void commandHandler(char c, uintptr_t extra) {
     (void)extra;
-    Commands.exec(c);
+    Debugger.exec(c);
 }
 
 static void printPrompt() {
@@ -374,12 +373,13 @@ static void handleRegisterValue(uint32_t value, uintptr_t reg, State state) {
     printPrompt();
 }
 
-void Commands::exec(char c) {
+void Debugger::exec(char c) {
     switch (c) {
     case 'R':
         cli.println(F("Reset"));
         Pins.reset(true);
-        goto regs;
+        printStatus();
+        break;
     case 'd':
         cli.print(F("Dump? "));
         cli.readHex(handleDump, DUMP_ADDR, UINT16_MAX);
@@ -400,9 +400,7 @@ void Commands::exec(char c) {
         return;
     case 'r':
         cli.println(F("Registers"));
-    regs:
-        Regs.get(true);
-        Regs.disassemble(Regs.nextIp(), 1);
+        printStatus();
         break;
     case '=':
         cli.print(F("Set register? "));
@@ -412,7 +410,8 @@ void Commands::exec(char c) {
     case 's':
         cli.println(F("Step"));
         Pins.step(c == 'S');
-        goto regs;
+        printStatus();
+        break;
     case 'G':
         cli.println(F("Go"));
         Pins.run();
@@ -432,10 +431,7 @@ void Commands::exec(char c) {
         cli.readLine(handleLoadFile, 0, str_buffer, sizeof(str_buffer));
         return;
     case '?':
-        cli.print(F("* Cyborg"));
-        cli.print(Regs.cpuName());
-        cli.println(F(" * " VERSION_TEXT));
-        cli.println(USAGE);
+        usage();
         break;
     case '\r':
         cli.println();
@@ -447,18 +443,32 @@ void Commands::exec(char c) {
     printPrompt();
 }
 
-void Commands::halt(bool show) {
+void Debugger::halt(bool show) {
     Pins.halt(show);
-    Regs.get(false);
+    printStatus();
+    printPrompt();
+}
+
+void Debugger::usage() const {
+    cli.print(F("* Cyborg"));
+    cli.print(Regs.cpuName());
+    cli.println(F(" * " VERSION_TEXT));
+    cli.println(USAGE);
+}
+
+void Debugger::printStatus() {
+    Regs.get(true);
     Regs.disassemble(Regs.nextIp(), 1);
+}
+
+void Debugger::begin() {
+    Pins.begin();
+    usage();
+    printStatus();
     printPrompt();
 }
 
-void Commands::begin() {
-    printPrompt();
-}
-
-void Commands::loop() {
+void Debugger::loop() {
     cli.loop();
 }
 

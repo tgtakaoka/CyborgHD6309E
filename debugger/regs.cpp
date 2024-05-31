@@ -1,8 +1,8 @@
 #include "regs.h"
 #include <asm_mc6809.h>
 #include <dis_mc6809.h>
-#include "commands.h"
 #include "config.h"
+#include "debugger.h"
 #include "mc6850.h"
 #include "pins.h"
 #include "string_util.h"

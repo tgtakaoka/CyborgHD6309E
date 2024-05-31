@@ -1,5 +1,5 @@
 #include "signals.h"
-#include "commands.h"
+#include "debugger.h"
 #include "digital_fast.h"
 #include "string_util.h"
 

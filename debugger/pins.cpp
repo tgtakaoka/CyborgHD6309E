@@ -1,6 +1,6 @@
 #include "pins.h"
 #include <Arduino.h>
-#include "commands.h"
+#include "debugger.h"
 #include "digital_fast.h"
 #include "mc6850.h"
 #include "regs.h"
@@ -366,7 +366,7 @@ void Pins::run() {
     negate_halt();
     loop();
     CCL.INTCTRL0 = CCL_INTMODE2_INTDISABLE_gc;
-    Commands.halt(true);
+    Debugger.halt(true);
 }
 
 void Pins::halt(bool show) {
@@ -511,12 +511,9 @@ void Pins::begin() {
     SPI.swap(SPI_MAPPING);
 #endif
 
-    assert_halt();
-    negate_reset();
-
     setIoDevice(SerialDevice::DEV_ACIA, ioBaseAddress());
 
-    startOscillator();
+    reset();
 }
 
 uint8_t Pins::allocateIrq() {
