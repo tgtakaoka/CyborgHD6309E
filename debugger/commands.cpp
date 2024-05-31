@@ -8,10 +8,7 @@
   S - step one instruction with printing bus cycles.
   r - print MPU registers.
   = - set MPU register. register value
-  c - continuously run with printing register.
   G - Go, continuously run MPU.
-  h - halt MPU.
-  H - halt MPU with printing bus cycles.
   D - disassemble
   A - assemble
   U - upload S19 file
@@ -24,6 +21,7 @@
 #include <SD.h>
 #include <string.h>
 #include "config.h"
+#include "mems.h"
 #include "pins.h"
 #include "regs.h"
 
@@ -31,12 +29,12 @@ using State = libcli::Cli::State;
 libcli::Cli cli;
 
 #if ENABLE_ASM == 1
-#define USAGE                                                              \
-    F("R:eset r:egs =:setReg d:ump D:is m:emory A:sm s/S:tep c/C:ont G:o " \
+#define USAGE                                                      \
+    F("R:eset r:egs =:setReg d:ump D:is m:emory A:sm s/S:tep G:o " \
       "U:pload F:iles L:oad")
 #else
-#define USAGE                                                         \
-    F("R:eset r:egs =:setReg d:ump D:is m:emory s/S:tep c/C:ont G:o " \
+#define USAGE                                                 \
+    F("R:eset r:egs =:setReg d:ump D:is m:emory s/S:tep G:o " \
       "U:pload F:iles L:oad")
 #endif
 
@@ -334,8 +332,7 @@ void handleUploadFile(char *line, uintptr_t extra, State state) {
         context->size += loadS19Record(context->buffer);
         cli.println();
     }
-    cli.readLine(handleUploadFile, context->extra(), context->buffer,
-            sizeof(context->buffer));
+    cli.readLine(handleUploadFile, context->extra(), context->buffer, sizeof(context->buffer));
 }
 
 static void handleRegisterValue(uint32_t, uintptr_t, State);
@@ -381,7 +378,6 @@ void Commands::exec(char c) {
     switch (c) {
     case 'R':
         cli.println(F("Reset"));
-        _target = HALT;
         Pins.reset(true);
         goto regs;
     case 'd':
@@ -414,39 +410,18 @@ void Commands::exec(char c) {
         return;
     case 'S':
     case 's':
-        if (_target != HALT) {
-            halt(c == 'S');
-            return;
-        }
         cli.println(F("Step"));
         Pins.step(c == 'S');
         goto regs;
-    case 'H':
-    case 'h':
-        if (_target != HALT) {
-            halt(c == 'H');
-            return;
-        }
-        break;
-    case 'c':
-    case 'C':
-        cli.println(F("Continue"));
-        _target = STEP;
-        _showRegs = (c == 'C');
-        return;
     case 'G':
-        if (_target != RUN) {
-            cli.println(F("Go"));
-            _target = RUN;
-            _showRegs = false;
-            Pins.run();
-        }
+        cli.println(F("Go"));
+        Pins.run();
         return;
     case 'U':
         cli.println(F("Upload waiting..."));
         upload_context.size = 0;
-        cli.readLine(handleUploadFile, upload_context.extra(),
-                upload_context.buffer, sizeof(upload_context.buffer));
+        cli.readLine(handleUploadFile, upload_context.extra(), upload_context.buffer,
+                sizeof(upload_context.buffer));
         return;
     case 'F':
         cli.println(F("Files"));
@@ -473,7 +448,6 @@ void Commands::exec(char c) {
 }
 
 void Commands::halt(bool show) {
-    _target = HALT;
     Pins.halt(show);
     Regs.get(false);
     Regs.disassemble(Regs.nextIp(), 1);
@@ -482,14 +456,10 @@ void Commands::halt(bool show) {
 
 void Commands::begin() {
     printPrompt();
-    _target = HALT;
 }
 
 void Commands::loop() {
-    if (_target == STEP) {
-        Pins.step();
-        Regs.get(_showRegs);
-    }
+    cli.loop();
 }
 
 // Local Variables:

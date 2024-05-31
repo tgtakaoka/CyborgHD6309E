@@ -8,15 +8,6 @@ struct Commands {
     void loop();
     void exec(char c);
     void halt(bool show = false);
-    bool isRunning() const { return _target == RUN; }
-
-private:
-    enum {
-        HALT,
-        STEP,
-        RUN,
-    } _target = HALT;
-    bool _showRegs;
 };
 
 extern Commands Commands;

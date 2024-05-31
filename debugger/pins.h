@@ -7,11 +7,8 @@
 #include "config.h"
 #include "signals.h"
 
-class Pins {
-public:
+struct Pins {
     void begin();
-    void loop();
-    bool isRunning() const { return _freeRunning; }
 
     void reset(bool show = false);
     void halt(bool show = false);
@@ -61,6 +58,7 @@ private:
         bool _capture;
     };
 
+    void loop();
     Signals &cycle(const Signals *prev);
     const Signals *unhalt();
     void setData(uint8_t data);
@@ -68,12 +66,10 @@ private:
             uint8_t max, bool capWrite, bool capRead, bool show);
 
     Dbus _dbus;
-    bool _freeRunning;
-    bool _stopRunning;
     uint8_t _irq;
     SerialDevice _ioDevice;
 };
 
-extern Pins Pins;
+extern struct Pins Pins;
 
 #endif /* __PINS_H__ */

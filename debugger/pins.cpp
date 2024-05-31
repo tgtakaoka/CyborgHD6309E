@@ -81,7 +81,7 @@ static inline void toggle_led() {
     }
 }
 
-class Pins Pins;
+struct Pins Pins;
 
 class Mc6850 Acia(Console);
 
@@ -321,8 +321,6 @@ void Pins::reset(bool show) {
     restartEQ();
 
     turnoff_led();
-    _freeRunning = false;
-    _stopRunning = false;
     Regs.reset();
     if (show)
         Signals::printCycles();
@@ -354,30 +352,21 @@ Signals &Pins::cycle(const Signals *prev) {
     return signals;
 }
 
-void Pins::stopRunning() {
-    _stopRunning = true;
-}
-
 void Pins::loop() {
-    if (_freeRunning) {
+    while (true) {
         Acia.loop();
         if (user_switch_asserted())
-            stopRunning();
-    }
-
-    if (_stopRunning) {
-        CCL.INTCTRL0 = CCL_INTMODE2_INTDISABLE_gc;
-        _stopRunning = false;
-        _freeRunning = false;
-        Commands.halt(true);
+            return;
     }
 }
 
 void Pins::run() {
-    _freeRunning = true;
     CCL.INTCTRL0 = CCL_INTMODE2_FALLING_gc;
     turnon_led();
     negate_halt();
+    loop();
+    CCL.INTCTRL0 = CCL_INTMODE2_INTDISABLE_gc;
+    Commands.halt(true);
 }
 
 void Pins::halt(bool show) {
@@ -527,8 +516,6 @@ void Pins::begin() {
 
     assert_halt();
     negate_reset();
-    _freeRunning = false;
-    _stopRunning = false;
 
     setIoDevice(SerialDevice::DEV_ACIA, ioBaseAddress());
 

@@ -16,12 +16,7 @@ void setup() {
 }
 
 void loop() {
-    if (Pins.isRunning()) {
-        Pins.loop();
-    } else {
-        cli.loop();
-        Commands.loop();
-    }
+    Commands.loop();
 }
 
 // Local Variables:
