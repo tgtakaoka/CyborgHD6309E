@@ -27,8 +27,6 @@
 #include "pins.h"
 #include "regs.h"
 
-using namespace libasm;
-
 using State = libcli::Cli::State;
 libcli::Cli cli;
 
@@ -80,7 +78,7 @@ static void memoryDump(uint16_t addr, uint16_t len) {
             if (a < start || a >= end) {
                 cli.print(F("   "));
             } else {
-                const auto data = Memory.read(a);
+                const auto data = Regs.read(a);
                 cli.print(' ');
                 cli.printHex(data, 2);
             }
@@ -91,7 +89,7 @@ static void memoryDump(uint16_t addr, uint16_t len) {
             if (a < start || a >= end) {
                 cli.print(' ');
             } else {
-                const char data = Memory.read(a);
+                const char data = Regs.read(a);
                 if (isprint(data)) {
                     cli.print(data);
                 } else {
@@ -182,7 +180,7 @@ static void handleMemory(uint32_t value, uintptr_t extra, State state) {
             }
         }
         cli.println();
-        Memory.write(last_addr, mem_buffer, index);
+        Regs.write(last_addr, mem_buffer, index);
         memoryDump(last_addr, index);
         last_addr += index;
     }
@@ -272,7 +270,7 @@ static int loadS19Record(const char *line) {
     for (int i = 0; i < num; i++) {
         buffer[i] = toInt8Hex(line + i * 2);
     }
-    Memory.write(addr, buffer, num);
+    Regs.write(addr, buffer, num);
     cli.printHex(addr, 4);
     cli.print(':');
     cli.printHex(num, 2);
@@ -477,7 +475,7 @@ void Commands::exec(char c) {
 void Commands::halt(bool show) {
     _target = HALT;
     Pins.halt(show);
-    Regs.get(_showRegs);
+    Regs.get(false);
     Regs.disassemble(Regs.nextIp(), 1);
     printPrompt();
 }

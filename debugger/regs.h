@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-#include <dis_memory.h>
-
 struct Regs {
     uint16_t s;
     uint16_t pc;
@@ -27,9 +25,7 @@ struct Regs {
         f = w;
         e = w >> 8;
     }
-    uint32_t getQ() const {
-        return (static_cast<uint32_t>(getD()) << 16) | getW();
-    }
+    uint32_t getQ() const { return (static_cast<uint32_t>(getD()) << 16) | getW(); }
     void setQ(uint32_t q) {
         setW(q);
         setD(q >> 16);
@@ -54,8 +50,14 @@ struct Regs {
     char validUint16Reg(const char *word) const;
     char validUint32Reg(const char *word) const;
     void setRegValue(char reg, uint32_t value);
-    uint16_t disassemble(uint16_t addr, uint16_t numInsn) const;
+
+    uint8_t read(uint16_t addr) const;
+    void write(uint16_t addr, uint8_t data);
+    void write(uint16_t addr, const uint8_t *data, uint8_t len);
+#if ENABLE_ASM == 1
     uint16_t assemble(uint16_t addr, const char *line) const;
+#endif
+    uint16_t disassemble(uint16_t addr, uint16_t numInsn) const;
 
 private:
     const char *_cpuType;
@@ -66,23 +68,7 @@ private:
     void restore6309();
 };
 
-extern Regs Regs;
-
-class Memory : public libasm::DisMemory {
-public:
-    Memory() : DisMemory(0) {}
-    bool hasNext() const override { return true; }
-    void setAddress(uint16_t addr) { resetAddress(addr); }
-
-    uint8_t read(uint16_t addr) const;
-    void write(uint16_t addr, uint8_t data);
-    void write(uint16_t addr, const uint8_t *data, uint8_t len);
-
-protected:
-    uint8_t nextByte() override;
-};
-
-extern Memory Memory;
+extern struct Regs Regs;
 
 #endif
 

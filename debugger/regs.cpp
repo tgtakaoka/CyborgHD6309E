@@ -7,13 +7,7 @@
 #include "pins.h"
 #include "string_util.h"
 
-#if ENABLE_ASM == 1
-libasm::mc6809::AsmMc6809 assembler;
-#endif
-libasm::mc6809::DisMc6809 disassembler;
-
 struct Regs Regs;
-struct Memory Memory;
 
 /**
  * How to determine MC6809 variants.
@@ -142,9 +136,9 @@ static constexpr uint8_t lo(const uint16_t v) {
 }
 
 void Regs::save() {
-    static const uint8_t PSHS_ALL[] = {0x34, 0xFF};  // PSHS PC,U,Y,X,DP,B,A,CC
-    static const uint8_t PSHU_S[] = {0x36, 0x40};    // PSHU S
-    static uint8_t buffer[14];
+    static constexpr uint8_t PSHS_ALL[] = {0x34, 0xFF};  // PSHS PC,U,Y,X,DP,B,A,CC
+    static constexpr uint8_t PSHU_S[] = {0x36, 0x40};    // PSHU S
+    uint8_t buffer[14];
 
     Pins.captureWrites(PSHS_ALL, sizeof(PSHS_ALL), buffer, 12);
     if (_cpuType == nullptr)
@@ -165,36 +159,34 @@ void Regs::save() {
 }
 
 void Regs::restore() {
-    static uint8_t LDS[] = {0x10, 0xCE, 0, 0};       // LDS #s-12
-    static uint8_t PULS_ALL[2 + 12] = {0x35, 0xFF};  // PULS CC,A,B,DP,X,Y,U,PC
-
-    const uint16_t sp = s - 12;
-    LDS[2] = hi(sp);
-    LDS[3] = lo(sp);
-    PULS_ALL[2] = cc;
-    PULS_ALL[3] = a;
-    PULS_ALL[4] = b;
-    PULS_ALL[5] = dp;
-    PULS_ALL[6] = hi(x);
-    PULS_ALL[7] = lo(x);
-    PULS_ALL[8] = hi(y);
-    PULS_ALL[9] = lo(y);
-    PULS_ALL[10] = hi(u);
-    PULS_ALL[11] = lo(u);
-    PULS_ALL[12] = hi(pc);
-    PULS_ALL[13] = lo(pc);
-
     if (is6309())
         restore6309();
+
+    const uint16_t sp = s - 12;
+    uint8_t LDS[] = {
+            0x10, 0xCE, hi(sp), lo(sp),  // LDS #s-12
+    };
     Pins.execInst(LDS, sizeof(LDS));
+
+    uint8_t PULS_ALL[2 + 12] = {
+            0x35, 0xFF,      // PULS
+            cc,              // CC,
+            a,               // A,
+            b,               // B,
+            dp,              // DP,
+            hi(x), lo(x),    // X,
+            hi(y), lo(y),    // Y,
+            hi(u), lo(u),    // U,
+            hi(pc), lo(pc),  // PC
+    };
     Pins.execInst(PULS_ALL, sizeof(PULS_ALL));
 }
 
 void Regs::save6309() {
-    static const uint8_t TFR_WY[] = {0x1F, 0x62};   // TFR W,Y
-    static const uint8_t TFR_VX[] = {0x1F, 0x71};   // TFR V,X
-    static const uint8_t PSHU_YX[] = {0x36, 0x30};  // PSHU Y,X
-    static uint8_t buffer[4];
+    static constexpr uint8_t TFR_WY[] = {0x1F, 0x62};   // TFR W,Y
+    static constexpr uint8_t TFR_VX[] = {0x1F, 0x71};   // TFR V,X
+    static constexpr uint8_t PSHU_YX[] = {0x36, 0x30};  // PSHU Y,X
+    uint8_t buffer[4];
 
     Pins.execInst(TFR_WY, sizeof(TFR_WY));
     Pins.execInst(TFR_VX, sizeof(TFR_VX));
@@ -205,16 +197,11 @@ void Regs::save6309() {
 }
 
 void Regs::restore6309() {
-    static uint8_t LDD[] = {0xCC, 0, 0};           // LDD #v
-    static const uint8_t TFR_DV[] = {0x1F, 0x07};  // TFR D,V
-    static uint8_t LDW[] = {0x10, 0x86, 0, 0};     // LDW #w
-
-    LDD[1] = hi(v);
-    LDD[2] = lo(v);
-    LDW[2] = e;
-    LDW[3] = f;
+    uint8_t LDD[] = {0xCC, hi(v), lo(v)};  // LDD #v
     Pins.execInst(LDD, sizeof(LDD));
+    static constexpr uint8_t TFR_DV[] = {0x1F, 0x07};  // TFR D,V
     Pins.execInst(TFR_DV, sizeof(TFR_DV));
+    uint8_t LDW[] = {0x10, 0x86, e, f};  // LDW #w
     Pins.execInst(LDW, sizeof(LDW));
 }
 
@@ -326,7 +313,47 @@ void Regs::setRegValue(char reg, uint32_t value) {
     return true;
 }
 
-static void printInsn(const libasm::Insn &insn) {
+uint8_t Regs::read(uint16_t addr) const {
+    uint8_t LDA[] = {0xB6, hi(addr), lo(addr)};  // LDA $addr
+    uint8_t data;
+    Pins.captureReads(LDA, sizeof(LDA), &data, sizeof(data));
+    return data;
+}
+
+void Regs::write(uint16_t addr, uint8_t data) {
+    uint8_t LDA[] = {0x86, data};  // LDA #data
+    Pins.execInst(LDA, sizeof(LDA));
+    uint8_t STA[] = {0xB7, hi(addr), lo(addr)};  // STA $addr
+    Pins.execInst(STA, sizeof(STA));
+}
+
+void Regs::write(uint16_t addr, const uint8_t *data, uint8_t len) {
+    for (auto i = 0; i < len; i++) {
+        write(addr++, *data++);
+    }
+}
+
+using namespace libasm;
+
+#if ENABLE_ASM == 1
+mc6809::AsmMc6809 assembler;
+#endif
+mc6809::DisMc6809 disassembler;
+
+struct DisMems final : DisMemory {
+    DisMems() : DisMemory(0) {}
+
+    bool hasNext() const override { return address() < 0x10000; }
+    void setAddress(uint16_t addr) { resetAddress(addr); }
+    uint8_t nextByte() override {
+        Regs.save();
+        const auto data = Regs.read(address());
+        Regs.restore();
+        return data;
+    };
+};
+
+static void printInsn(const Insn &insn) {
     cli.printHex(insn.address(), 4);
     cli.print(':');
     for (int i = 0; i < insn.length(); i++) {
@@ -341,19 +368,19 @@ static void printInsn(const libasm::Insn &insn) {
 uint16_t Regs::disassemble(uint16_t addr, uint16_t numInsn) const {
     disassembler.setCpu(cpu());
     disassembler.setOption("uppercase", "true");
+    DisMems mems;
     uint16_t num = 0;
     while (num < numInsn) {
         char operands[20];
-        libasm::Insn insn(addr);
-        Memory.setAddress(addr);
-        disassembler.decode(Memory, insn, operands, sizeof(operands));
+        Insn insn(addr);
+        mems.setAddress(addr);
+        disassembler.decode(mems, insn, operands, sizeof(operands));
         addr += insn.length();
         num++;
         printInsn(insn);
         if (disassembler.getError()) {
             cli.print(F("Error: "));
-            cli.println(reinterpret_cast<const __FlashStringHelper *>(
-                    disassembler.errorText_P(disassembler.getError())));
+            cli.println(reinterpret_cast<const __FlashStringHelper *>(disassembler.errorText_P()));
             continue;
         }
         cli.printStr(insn.name(), -6);
@@ -364,52 +391,19 @@ uint16_t Regs::disassemble(uint16_t addr, uint16_t numInsn) const {
 
 #if ENABLE_ASM == 1
 uint16_t Regs::assemble(uint16_t addr, const char *line) const {
-    assembler.setCpu(cpu());
-    libasm::Insn insn(addr);
+    assembler.setCpu(Regs.cpu());
+    Insn insn(addr);
     if (assembler.encode(line, insn)) {
         cli.print(F("Error: "));
-        cli.println(reinterpret_cast<const __FlashStringHelper *>(
-                assembler.errorText_P(assembler.getError())));
+        cli.println(reinterpret_cast<const __FlashStringHelper *>(assembler.errorText_P()));
     } else {
-        Memory.write(insn.address(), insn.bytes(), insn.length());
+        write(insn.address(), insn.bytes(), insn.length());
         disassemble(insn.address(), 1);
         addr += insn.length();
     }
     return addr;
 }
 #endif
-
-uint8_t Memory::read(uint16_t addr) const {
-    static uint8_t LDA[] = {0xB6, 0, 0};  // LDA $addr
-    LDA[1] = hi(addr);
-    LDA[2] = lo(addr);
-    uint8_t data;
-    Pins.captureReads(LDA, sizeof(LDA), &data, 1);
-    return data;
-}
-
-void Memory::write(uint16_t addr, uint8_t data) {
-    static uint8_t LDA[] = {0x86, 0};     // LDA #data
-    static uint8_t STA[] = {0xB7, 0, 0};  // STA $addr
-    LDA[1] = data;
-    STA[1] = hi(addr);
-    STA[2] = lo(addr);
-    Pins.execInst(LDA, sizeof(LDA));
-    Pins.execInst(STA, sizeof(STA));
-}
-
-void Memory::write(uint16_t addr, const uint8_t *data, uint8_t len) {
-    for (auto i = 0; i < len; i++) {
-        write(addr++, *data++);
-    }
-}
-
-uint8_t Memory::nextByte() {
-    Regs.save();
-    const uint8_t data = read(address());
-    Regs.restore();
-    return data;
-}
 
 // Local Variables:
 // mode: c++
